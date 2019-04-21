@@ -26,7 +26,7 @@ public class LinearRobotTest {
 		long dt_model_l = 10000l; // 10e4 nanoseconds ~ 0.01 milliseconds;
 		double dt = 0.00001; //10e-5 seconds ~ 0.01 milliseconds
 		
-		Vector<Double> inputs = new Vector<>();
+		Vector<Double> inputs = new Vector<>(); // Forces acting on the axis q1, q2, q3
 		inputs.addElement(0.0);
 		inputs.addElement(0.0);
 		inputs.addElement(30.0);
@@ -51,12 +51,12 @@ public class LinearRobotTest {
 		coeffQpI.add(1.5);
 		coeffQpI.add(1.5);
 
-		Vector<Double> qt = new Vector<>(); // control amplification, positions 
+		Vector<Double> qt = new Vector<>(); // target for robot state 
 		qt.add(0.5);
 		qt.add(0.5);
 		qt.add(0.5);
 
-		Vector<Double> qpt = new Vector<>(); // control amplification, positions 
+		Vector<Double> qpt = new Vector<>(); // target for robot speeds - should not move if at target state.
 		qpt.add(0.0);
 		qpt.add(0.0);
 		qpt.add(0.0);
@@ -66,6 +66,8 @@ public class LinearRobotTest {
 		
 		
 		while(true) {
+			
+			// periodic task for model calculation
 			long modelDiff = curTime - lastModelTime;
 			if(modelDiff < 0l) {
 				modelDiff = (Long.MAX_VALUE - lastModelTime) + (curTime - Long.MIN_VALUE);
@@ -82,7 +84,7 @@ public class LinearRobotTest {
 				robot.step(dt, inputs);
 			}
 			
-			
+			// periodic task for controller calculation
 			long diff = curTime - lastControlTime;
 			if(diff < 0l) {
 				diff = (Long.MAX_VALUE - lastControlTime) + (curTime - Long.MIN_VALUE);
@@ -95,8 +97,6 @@ public class LinearRobotTest {
 					lastControlTime = lastControlTime + dtl;
 				}
 			}
-
-			
 			if(diff > dtl) {
 				
 				Vector<Double> input_calc = control.getInputs(qt, qpt, robot.getState(), robot.getDerivate());
@@ -114,7 +114,7 @@ public class LinearRobotTest {
 				inputs.set(2,F3);
 			}
 			
-
+			// periodic task for printing state
 			long printDiff = curTime - lastPrintTime;
 			if(printDiff < 0l) {
 				printDiff = (Long.MAX_VALUE - lastPrintTime) + (curTime - Long.MIN_VALUE);
@@ -132,12 +132,12 @@ public class LinearRobotTest {
 				System.out.println(String.format("Position at time %d: %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s)", curTime, state.get(0), der.get(0),state.get(1), der.get(1), state.get(2), der.get(2)));
 			}
 
-			
+			// periodic task for setting target state
 			long demoDiff = curTime - lastDemoTime;
 			if(demoDiff < 0l) {
-				demoDiff = (Long.MAX_VALUE - lastPrintTime) + (curTime - Long.MIN_VALUE);
+				demoDiff = (Long.MAX_VALUE - lastDemoTime) + (curTime - Long.MIN_VALUE);
 				if(demoDiff > dtl) {
-					lastPrintTime = Long.MIN_VALUE + dtl - (Long.MAX_VALUE-lastPrintTime);
+					lastDemoTime = Long.MIN_VALUE + dtl - (Long.MAX_VALUE-lastDemoTime);
 				}
 			} else {
 				if(demoDiff > dt_demo_l) {
@@ -146,7 +146,7 @@ public class LinearRobotTest {
 			}
 			if(demoDiff > dt_demo_l) {
 				qt.set(0, qt.get(0) + 0.1);
-				qt.set(1, qt.get(1) + 0.1);
+				qt.set(1, qt.get(1) + 0.05);
 				qt.set(2, qt.get(2) + 0.1);
 			}
 			curTime = System.nanoTime();
