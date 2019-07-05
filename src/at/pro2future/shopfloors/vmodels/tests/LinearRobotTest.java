@@ -2,7 +2,9 @@ package at.pro2future.shopfloors.vmodels.tests;
 
 import java.util.Vector;
 
+import at.pro2future.shopfloors.vmodels.DegreeOfFreedom;
 import at.pro2future.shopfloors.vmodels.LinearRobot;
+import at.pro2future.shopfloors.vmodels.PIController;
 
 public class LinearRobotTest {
 	public static void main(String[] args) {
@@ -63,7 +65,7 @@ public class LinearRobotTest {
 		
 		PIController control = new PIController(3, dtc, coeffQP, coeffQI, coeffQpP, coeffQpI);
 		
-		
+		Vector<DegreeOfFreedom> qi = robot.getState();
 		
 		while(true) {
 			
@@ -127,9 +129,8 @@ public class LinearRobotTest {
 				}
 			}
 			if(printDiff > dt_print_l) {
-				Vector<Double> state = robot.getState();
 				Vector<Double> der = robot.getDerivate();
-				System.out.println(String.format("Position at time %d: %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s)", curTime, state.get(0), der.get(0),state.get(1), der.get(1), state.get(2), der.get(2)));
+				System.out.println(String.format("Position at time %d: %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s) / %6.3fm(%6.3fm/s)", curTime, qi.get(0).value, der.get(0),qi.get(1).value, der.get(1), qi.get(2).value, der.get(2)));
 			}
 
 			// periodic task for setting target state
@@ -145,7 +146,7 @@ public class LinearRobotTest {
 				}
 			}
 			if(demoDiff > dt_demo_l) {
-				qt.set(0, qt.get(0) + 0.1);
+				qt.set(0, qt.get(0) + 0.2);
 				qt.set(1, qt.get(1) + 0.05);
 				qt.set(2, qt.get(2) + 0.1);
 			}

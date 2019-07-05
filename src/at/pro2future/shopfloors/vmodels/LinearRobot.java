@@ -6,13 +6,14 @@ public class LinearRobot implements VirtualMachineModel {
 
 	final int dof = 3;
 	
-	private double q1, q2, q3;
+	private DegreeOfFreedom q1, q2, q3;
 	private double q1p, q2p, q3p;
 	private double m1, m2, m3;
 	
 	final double g = 9.81;
 	
-	Vector<Double> state, der; 
+	Vector<Double> derInternal; 
+	Vector<DegreeOfFreedom> stateInternal;
 	
 	public LinearRobot(double q10, double q20, double q30) {
 		this(3.0,2.0,1.0, q10,q20,q30, 0.0,0.0,0.0);
@@ -33,23 +34,23 @@ public class LinearRobot implements VirtualMachineModel {
 		m2 = mMiddle;
 		m3 = mTool;
 		
-		q1 = q10;
-		q2 = q20;
-		q3 = q30;
+		q1 = new DegreeOfFreedom(q10);
+		q2 = new DegreeOfFreedom(q20);
+		q3 = new DegreeOfFreedom(q30);
 		
 		q1p = q1p0;
 		q2p = q2p0;
 		q3p = q3p0;
 		
-		state = new Vector<>(3);
-		state.add(q10);
-		state.add(q20);
-		state.add(q30);
+		stateInternal = new Vector<>(3);
+		stateInternal.add(q1);
+		stateInternal.add(q2);
+		stateInternal.add(q3);
 		
-		der = new Vector<>(3);
-		der.add(q1p0);
-		der.add(q2p0);
-		der.add(q3p0);
+		derInternal = new Vector<>(3);
+		derInternal.add(q1p0);
+		derInternal.add(q2p0);
+		derInternal.add(q3p0);
 	}
 	
 	public LinearRobot() {
@@ -66,17 +67,22 @@ public class LinearRobot implements VirtualMachineModel {
 	}
 
 	@Override
-	public Vector<Double> step(double dt, Vector<Double> inputs) {
-		Vector<Double> res = step(dt, state, der, inputs, der);
-		for(int i = 0; i < dof; i++) {
-			state.set(i, res.get(i));
+	public void step(double dt, Vector<Double> inputs) {
+		Vector<Double> state = step(dt, stateInternal, derInternal, inputs, derInternal);
+		for(int i = 0; i < 3; i++) {
+			stateInternal.get(i).value = state.get(i);
 		}
-		return state;
 	}
 
 	@Override
-	public Vector<Double> step(double dt, Vector<Double> state, Vector<Double> derivate, Vector<Double> inputs, Vector<Double> derivateExpected ) {
-		Vector<Double> res = new Vector<>(dof);
+	public Vector<Double> step(double dt, Vector<DegreeOfFreedom> currentState, Vector<Double> currentDerivate, Vector<Double> inputs, Vector<Double> derExpected) {
+		
+		Vector<Double> stateExpected = new Vector<>(); 
+		
+		double xp0 = currentDerivate.get(0);
+		double yp0 = currentDerivate.get(1);
+		double zp0 = currentDerivate.get(2);
+		
 		
 		double xpp = inputs.get(1) / (m1 + m2 + m3);
 		double ypp = inputs.get(0) / (m1 + m2 + m3);
@@ -84,35 +90,35 @@ public class LinearRobot implements VirtualMachineModel {
 		double xp = q1p + xpp*dt;
 		double yp = q2p + ypp*dt;
 		double zp = q3p + zpp*dt;
-		double x = q1 + (xp + q1p)*dt/2.0;
-		double y = q2 + (yp + q2p)*dt/2.0;
-		double z = q3 + (zp + q3p)*dt/2.0;
+		double x = q1.value + (xp + q1p)*dt/2.0;
+		double y = q2.value + (yp + q2p)*dt/2.0;
+		double z = q3.value + (zp + q3p)*dt/2.0;
 		
-		q1 = x;
-		q2 = y;
-		q3 = z;
+		q1.value = x;
+		q2.value = y;
+		q3.value = z;
 		q1p = xp;
 		q2p = yp;
 		q3p = zp;
 		
-		res.add(0, x);
-		res.add(1,y);
-		res.add(2,z);
-		derivate.set(0, xp);
-		derivate.set(1,yp);
-		derivate.set(2,zp);
+		stateExpected.add(x);
+		stateExpected.add(y);
+		stateExpected.add(z);
+		derExpected.set(0, xp);
+		derExpected.set(1,yp);
+		derExpected.set(2,zp);
 		
-		return res;
+		return stateExpected;
 	}
 
 	@Override
-	public Vector<Double> getState() {
-		return state;
+	public Vector<DegreeOfFreedom> getState() {
+		return stateInternal;
 	}
 	
 	@Override
 	public Vector<Double> getDerivate() {
-		return der;
+		return derInternal;
 	}
 
 }
